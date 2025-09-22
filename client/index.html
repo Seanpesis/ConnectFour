@@ -161,7 +161,6 @@
             <button onclick="joinGame()">הצטרף למשחק</button>
             <div id="gameMessage"></div>
         </div>
-        <!-- חדר המתנה -->
         <div id="waitingRoom" class="game-options hidden">
             <h3>חדר המתנה</h3>
             <p>קוד המשחק שלך:</p>
@@ -169,8 +168,6 @@
             <p>תן את הקוד הזה לשחקן השני כדי שיוכל להצטרף למשחק</p>
             <button onclick="leaveWaitingRoom()">ביטול משחק</button>
         </div>
-        
-        <!-- לוח המשחק -->
         <div id="gameSection" class="game-board hidden">
             <div class="status" id="gameStatus">ממתין לשחקן נוסף...</div>
             <div class="board" id="gameBoard"></div>
@@ -272,13 +269,13 @@
             document.getElementById('waitingRoom').classList.add('hidden');
             document.getElementById('gameSection').classList.remove('hidden');
             createBoard();
-            gameInterval = setInterval(updateGame, 1000); // עדכון כל שנייה
+            gameInterval = setInterval(updateGame, 1000); 
         }
         function showWaitingRoom(gameCode) {
             document.getElementById('gameOptions').classList.add('hidden');
             document.getElementById('waitingRoom').classList.remove('hidden');
             document.getElementById('gameCodeDisplay').textContent = gameCode;
-            gameInterval = setInterval(checkForSecondPlayer, 1000); // בדיקה כל שנייה
+            gameInterval = setInterval(checkForSecondPlayer, 1000); 
         }
         async function checkForSecondPlayer() {
             if (!currentGameCode) return;
