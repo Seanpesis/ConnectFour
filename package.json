@@ -1,0 +1,13 @@
+{
+  "name": "connect4-game",
+  "version": "1.0.0",
+  "description": "Connect Four Multiplayer Game",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "cd server && npm start",
+    "install-server": "cd server && npm install"
+  },
+  "keywords": ["connect4", "game", "multiplayer", "nodejs"],
+  "author": "Student",
+  "license": "MIT"
+}

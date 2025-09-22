@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ארבע בשורה - Connect Four</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f3f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: rgb(255, 255, 255);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #000000;
+            margin-bottom: 30px;
+        }
+        
+        
+        .login-form, .game-options, .game-board {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .login-form {
+            background-color: #f9f9f9;
+        }
+        
+        .game-options {
+            background-color: #e8f4f8;
+        }
+        
+        .game-board {
+            background-color: #fff;
+        }
+        
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(7, 60px);
+            grid-template-rows: repeat(6, 60px);
+            gap: 2px;
+            margin: 20px auto;
+            width: fit-content;
+            background-color: #2196F3;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        
+        .cell {
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .cell.x {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .cell.o {
+            background-color: #ffeb3b;
+            color: black;
+        }
+        
+        .status {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .instructions {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        
+        .instructions ul {
+            margin: 10px 0;
+            padding-right: 20px;
+        }
+        
+        .instructions li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ארבע בשורה - Connect Four</h1>
+        <div class="instructions">
+            <h3>הוראות המשחק:</h3>
+            <ul>
+                <li>המטרה: להיות הראשון שיוצר רצף של 4 אבנים באותו צבע</li>
+                <li>הרצף יכול להיות אופקי, אנכי או אלכסוני</li>
+                <li>כל שחקן בתורו מפיל אבן לעמודה</li>
+                <li>האבן נופלת לתחתית העמודה או על האבן הקודמת</li>
+                <li>השחקן הראשון (X) מתחיל</li>
+            </ul>
+        </div>
+        <div id="loginSection" class="login-form">
+            <h3>התחברות</h3>
+            <input type="text" id="username" placeholder="שם משתמש" required>
+            <input type="password" id="password" placeholder="סיסמה" required>
+            <button onclick="login()">התחבר</button>
+            <div id="loginMessage"></div>
+        </div>
+        <div id="gameOptions" class="game-options hidden">
+            <h3>אפשרויות משחק</h3>
+            <button onclick="createNewGame()">יצירת משחק חדש</button>
+            <br><br>
+            <input type="text" id="gameCodeInput" placeholder="הזן קוד משחק">
+            <button onclick="joinGame()">הצטרף למשחק</button>
+            <div id="gameMessage"></div>
+        </div>
+        <!-- חדר המתנה -->
+        <div id="waitingRoom" class="game-options hidden">
+            <h3>חדר המתנה</h3>
+            <p>קוד המשחק שלך:</p>
+            <div style="font-size: 24px; font-weight: bold; color: #4CAF50; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 5px;" id="gameCodeDisplay"></div>
+            <p>תן את הקוד הזה לשחקן השני כדי שיוכל להצטרף למשחק</p>
+            <button onclick="leaveWaitingRoom()">ביטול משחק</button>
+        </div>
+        
+        <!-- לוח המשחק -->
+        <div id="gameSection" class="game-board hidden">
+            <div class="status" id="gameStatus">ממתין לשחקן נוסף...</div>
+            <div class="board" id="gameBoard"></div>
+            <button onclick="leaveGame()">עזוב משחק</button>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentGameCode = null;
+        let gameInterval = null;
+        async function login() {
+            let username = document.getElementById('username').value;
+            let password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showMessage('loginMessage', 'אנא מלא את כל השדות', 'error');
+                return;
+            }
+            
+            try {
+                let response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                let data = await response.json();
+                
+                if (data.success) {
+                    currentUser = username;
+                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('gameOptions').classList.remove('hidden');
+                    showMessage('loginMessage', 'התחברת בהצלחה!', 'success');
+                } else {
+                    showMessage('loginMessage', data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('loginMessage', 'שגיאה בחיבור לשרת', 'error');
+            }
+        }
+        async function createNewGame() {
+            try {
+                let response = await fetch('http://localhost:3000/api/create-game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                
+                let data = await response.json();
+                
+                if (data.success) {
+                    currentGameCode = data.gameCode;
+                    showMessage('gameMessage', `משחק נוצר! קוד המשחק: ${data.gameCode}`, 'success');
+                    showWaitingRoom(data.gameCode);
+                } else {
+                    showMessage('gameMessage', data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('gameMessage', 'שגיאה ביצירת משחק', 'error');
+            }
+        }
+        async function joinGame() {
+            let gameCode = document.getElementById('gameCodeInput').value;
+            
+            if (!gameCode) {
+                showMessage('gameMessage', 'אנא הזן קוד משחק', 'error');
+                return;
+            }
+            
+            try {
+                let response = await fetch('http://localhost:3000/api/join-game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ gameCode, username: currentUser })
+                });
+                
+                let data = await response.json();
+                
+                if (data.success) {
+                    currentGameCode = gameCode;
+                    showMessage('gameMessage', 'הצטרפת למשחק בהצלחה!', 'success');
+                    startGame();
+                } else {
+                    showMessage('gameMessage', data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('gameMessage', 'שגיאה בהצטרפות למשחק', 'error');
+            }
+        }
+        function startGame() {
+            document.getElementById('gameOptions').classList.add('hidden');
+            document.getElementById('waitingRoom').classList.add('hidden');
+            document.getElementById('gameSection').classList.remove('hidden');
+            createBoard();
+            gameInterval = setInterval(updateGame, 1000); // עדכון כל שנייה
+        }
+        function showWaitingRoom(gameCode) {
+            document.getElementById('gameOptions').classList.add('hidden');
+            document.getElementById('waitingRoom').classList.remove('hidden');
+            document.getElementById('gameCodeDisplay').textContent = gameCode;
+            gameInterval = setInterval(checkForSecondPlayer, 1000); // בדיקה כל שנייה
+        }
+        async function checkForSecondPlayer() {
+            if (!currentGameCode) return;
+            
+            try {
+                let response = await fetch(`http://localhost:3000/api/get-game?code=${currentGameCode}`);
+                let data = await response.json();
+                
+                if (data.success && data.game.players.length >= 2) {
+                    clearInterval(gameInterval);
+                    startGame();
+                }
+            } catch (error) {
+                console.error('שגיאה בבדיקת שחקן שני:', error);
+            }
+        }
+        async function leaveWaitingRoom() {
+            if (gameInterval) {
+                clearInterval(gameInterval);
+                gameInterval = null;
+            }
+            if (currentGameCode) {
+                try {
+                    await fetch(`http://localhost:3000/api/cancel-game?code=${currentGameCode}`);
+                } catch (error) {
+                    console.error('שגיאה בביטול המשחק:', error);
+                }
+            }
+            
+            currentGameCode = null;
+            document.getElementById('waitingRoom').classList.add('hidden');
+            document.getElementById('gameOptions').classList.remove('hidden');
+            document.getElementById('gameMessage').textContent = '';
+        }
+        function createBoard() {
+            let board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+            
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 7; col++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.onclick = () => makeMove(col);
+                    board.appendChild(cell);
+                }
+            }
+        }
+        async function updateGame() {
+            if (!currentGameCode) return;
+            
+            try {
+                let response = await fetch(`http://localhost:3000/api/get-game?code=${currentGameCode}`);
+                let data = await response.json();
+                
+                if (data.success) {
+                    updateBoard(data.game.board);
+                    updateStatus(data.game);
+                }
+            } catch (error) {
+                console.error('שגיאה בעדכון המשחק:', error);
+            }
+        }
+        function updateBoard(board) {
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 7; col++) {
+                    let cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    if (board[row][col] === 'X') {
+                        cell.className = 'cell x';
+                        cell.textContent = 'X';
+                    } else if (board[row][col] === 'O') {
+                        cell.className = 'cell o';
+                        cell.textContent = 'O';
+                    } else {
+                        cell.className = 'cell';
+                        cell.textContent = '';
+                    }
+                }
+            }
+        }
+        function updateStatus(game) {
+            let statusElement = document.getElementById('gameStatus');
+            
+            if (game.status === 'waiting') {
+                statusElement.textContent = 'ממתין לשחקן נוסף...';
+            } else if (game.status === 'playing') {
+                let currentPlayerName = game.players[game.currentPlayer];
+                statusElement.textContent = `תור של: ${currentPlayerName}`;
+            } else if (game.status === 'finished') {
+                statusElement.textContent = `המשחק הסתיים! המנצח: ${game.winner}`;
+                clearInterval(gameInterval);
+            }
+        }
+        async function makeMove(column) {
+            if (!currentGameCode) return;
+            
+            try {
+                let response = await fetch('http://localhost:3000/api/make-move', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        gameCode: currentGameCode, 
+                        username: currentUser, 
+                        column: column 
+                    })
+                });
+                
+                let data = await response.json();
+                
+                if (!data.success) {
+                    showMessage('gameMessage', data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('gameMessage', 'שגיאה בביצוע המהלך', 'error');
+            }
+        }
+        function leaveGame() {
+            if (gameInterval) {
+                clearInterval(gameInterval);
+                gameInterval = null;
+            }
+            
+            currentGameCode = null;
+            document.getElementById('gameSection').classList.add('hidden');
+            document.getElementById('gameOptions').classList.remove('hidden');
+            document.getElementById('gameMessage').textContent = '';
+        }
+        function showMessage(elementId, message, type) {
+            let element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.color = type === 'error' ? 'red' : 'green';
+        }
+    </script>
+
+    <div id="footer" style="text-align: center; margin-top: 20px; font-size: 12px; color: #000000;">Created by Sean Pesis &copy; 2025</div>
+</body>
+</html>
